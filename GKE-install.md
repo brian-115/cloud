@@ -1,40 +1,45 @@
-# Kubernates (K8S) install / config on GCP
+# GKE install and config
 
 Requirement
 
 * gcloud
 * kubectl
+* Cloud Shell (use for this document)
 
 Document: https://blog.gcp.expert/gke-k8s-pod-network/
 
-## 安裝 kubectl
+## Install GKE
+
+Check current configure `gcloud`
 
 ```
-$ sudo yum install -y kubectl
-$ kubectl version
-Client Version: version.Info{Major:"1", Minor:"13", GitVersion:"v1.13.0", GitCommit:"ddf47ac13c1a9483ea035a79cd7c10005ff21a6d", GitTreeState:"clean", BuildDate:"2018-12-03T21:04:45Z", GoVersion:"go1.11.2", Compiler:"gc", Platform:"linux/amd64"}
-The connection to the server localhost:8080 was refused - did you specify the right host or port?
-
-```
-
-## Configure kubectl
-
-## 建立 K8S on GCP
-
-```
-[centos@itu9adm-1 ~]$ gcloud config list
+$ gcloud config list
+[component_manager]
+disable_update_check = True
 [compute]
-zone = asia-east1-b
+gce_metadata_read_timeout_sec = 5
 [core]
-account = itu9-admin-service-account@wpgcloud-201706.iam.gserviceaccount.com
-disable_usage_reporting = True
-project = wpgcloud-201706
+account = brian.chang@wpgholdings.com
+disable_usage_reporting = False
+project = itu9-poc-20190430
+[metrics]
+environment = devshell
 
-Your active configuration is: [default]
+Your active configuration is: [cloudshell-49]
 
 ```
 
-### Create subnet for kubernates
+Create vpc (optional)
+
+```
+$ gcloud compute networks create gcpvpc --subnet-mode=custom
+Created [https://www.googleapis.com/compute/v1/projects/itu9-poc-20190430/global/networks/gcpvpc].
+NAME    SUBNET_MODE  BGP_ROUTING_MODE  IPV4_RANGE  GATEWAY_IPV4
+gcpvpc  CUSTOM       REGIONAL
+
+```
+
+Create subnet for kubernates (optional)
 
 ```
 $ gcloud compute networks subnets create kubernates \
@@ -49,6 +54,8 @@ kubernates  asia-east1  gcpvpc   10.8.51.0/24
 ```
 
 > *** Cluster.cluster_ipv4_cidr CIDR block size must be no bigger than /9 and no smaller than /19 ***
+
+Create cluster for kubernates
 
 ```
 $ gcloud container clusters create "kube-cluster-1" \
@@ -76,12 +83,37 @@ kube-cluster-1  asia-east1  1.11.3-gke.18   172.18.0.2  g1-small      1.11.3-gke
 
 ```
 
+## Install kubectl (optional)
+
+```
+$ sudo yum install -y kubectl
+$ kubectl version
+Client Version: version.Info{Major:"1", Minor:"13", GitVersion:"v1.13.0", GitCommit:"ddf47ac13c1a9483ea035a79cd7c10005ff21a6d", GitTreeState:"clean", BuildDate:"2018-12-03T21:04:45Z", GoVersion:"go1.11.2", Compiler:"gc", Platform:"linux/amd64"}
+The connection to the server localhost:8080 was refused - did you specify the right host or port?
+
+```
+
+## Configure kubectl (optional)
+
+Setup `kubectl` credentials
+
+```
+$ gcloud container clusters get-credentials gke-zone-demo \
+  --zone asia-east1-b
+  
+```
+
+
 ```
 $ gcloud container clusters get-credentials kube-cluster-1 --region asia-east1 --project wpgcloud-201706
 Fetching cluster endpoint and auth data.
 kubeconfig entry generated for kube-cluster-1.
 
 ```
+
+## Relative command for kubectl
+
+List nodes : `kubectl get nodes`
 
 ```
 $ kubectl get nodes
@@ -92,6 +124,8 @@ gke-kube-cluster-1-default-pool-db8989f3-df87   Ready    <none>   19m   v1.11.3-
 
 ```
 
+Review GCEs
+
 ```
 $ gcloud compute instances list --filter="name:gke-kube"
 NAME                                           ZONE          MACHINE_TYPE  PREEMPTIBLE  INTERNAL_IP  EXTERNAL_IP  STATUS
@@ -101,8 +135,11 @@ gke-kube-cluster-1-default-pool-38edd430-n2pk  asia-east1-c  g1-small           
 
 ```
 
+Review Firewall rules
+
 ```
 $ gcloud container clusters describe kube-cluster-1 --region asia-east1
+
 $ gcloud compute firewall-rules list \
   --filter 'name~^gke-kube-cluster-1' \
   --format 'table(
