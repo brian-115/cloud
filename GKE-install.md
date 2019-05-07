@@ -29,10 +29,11 @@ Your active configuration is: [cloudshell-49]
 
 ```
 
-Create vpc (optional)
+Create VPC (optional)
 
 ```
 $ gcloud compute networks create gcpvpc --subnet-mode=custom
+
 Created [https://www.googleapis.com/compute/v1/projects/itu9-poc-20190430/global/networks/gcpvpc].
 NAME    SUBNET_MODE  BGP_ROUTING_MODE  IPV4_RANGE  GATEWAY_IPV4
 gcpvpc  CUSTOM       REGIONAL
@@ -47,7 +48,7 @@ $ gcloud compute networks subnets create kubernates \
   --range=10.8.51.0/24 --secondary-range pods01=172.16.0.0/16,services01=172.17.0.0/16 \
   --enable-private-ip-google-access
   
-Created [https://www.googleapis.com/compute/v1/projects/wpgcloud-201706/regions/asia-east1/subnetworks/kubernates].
+Created [https://www.googleapis.com/compute/v1/projects/itu9-poc-20190430/regions/asia-east1/subnetworks/kubernates].
 NAME        REGION      NETWORK  RANGE
 kubernates  asia-east1  gcpvpc   10.8.51.0/24
 
@@ -55,33 +56,32 @@ kubernates  asia-east1  gcpvpc   10.8.51.0/24
 
 > *** Cluster.cluster_ipv4_cidr CIDR block size must be no bigger than /9 and no smaller than /19 ***
 
+Get GKE cluster version
+
+```
+$ gcloud container get-server-config --region asia-east1
+```
+
 Create cluster for kubernates
 
 ```
-$ gcloud container clusters create "kube-cluster-1" \
-  --region "asia-east1" \
-  --cluster-version "1.11.3-gke.18" \
-  --enable-ip-alias --enable-private-nodes --enable-private-endpoint --enable-master-authorized-networks \
-  --master-authorized-networks=10.8.48.0/24 \
-  --network gcpvpc --subnetwork kubernates \
-  --cluster-secondary-range-name=pods01 --services-secondary-range-name=services01 \
-  --master-ipv4-cidr 172.18.0.0/28 \
-  --machine-type "g1-small" --image-type "COS" --disk-type "pd-standard" --disk-size "100" \
-  --num-nodes "1" --enable-cloud-logging --enable-cloud-monitoring \
-  --no-enable-basic-auth \
-  --no-issue-client-certificate
+$ gcloud beta container clusters create "gke-cluster-1" \
+  --region "asia-east1" --no-enable-basic-auth \
+  --cluster-version "1.12.7-gke.10" --machine-type "g1-small" --image-type "COS" \
+  --disk-type "pd-standard" --disk-size "100" \
+  --num-nodes "1" --enable-stackdriver-kubernetes \
+  --enable-private-nodes --master-ipv4-cidr "172.18.0.0/28" --enable-ip-alias \
+  --network "gcpvpc" --subnetwork "kubernates" \
+  --cluster-secondary-range-name "pods01" --services-secondary-range-name "services01" \
+  --enable-master-authorized-networks --master-authorized-networks 0.0.0.0/0 \
+  --enable-autoupgrade --enable-autorepair --maintenance-window "13:00"
 
-WARNING: Starting in 1.12, default node pools in new clusters will have their legacy Compute Engine instance metadata endpoints disabled by default. To create a cluster with legacy instance metadata endpoints disabled in the default node pool, run `clusters create` with the flag `--metadata disable-legacy-endpoints=true`.
-This will enable the autorepair feature for nodes. Please see https://cloud.google.com/kubernetes-engine/docs/node-auto-repair for more information on node autorepairs.
-WARNING: Starting in Kubernetes v1.10, new clusters will no longer get compute-rw and storage-ro scopes added to what is specified in --scopes (though the latter will remain included in the default --scopes). To use these scopes, add them explicitly to --scopes. To use the new behavior, set container/new_scopes_behavior property (gcloud config set container/new_scopes_behavior true).
-Creating cluster kube-cluster-1 in asia-east1...done.
-Created [https://container.googleapis.com/v1/projects/wpgcloud-201706/zones/asia-east1/clusters/kube-cluster-1].
-To inspect the contents of your cluster, go to: https://console.cloud.google.com/kubernetes/workload_/gcloud/asia-east1/kube-cluster-1?project=wpgcloud-201706
-kubeconfig entry generated for kube-cluster-1.
-NAME            LOCATION    MASTER_VERSION  MASTER_IP   MACHINE_TYPE  NODE_VERSION   NUM_NODES  STATUS
-kube-cluster-1  asia-east1  1.11.3-gke.18   172.18.0.2  g1-small      1.11.3-gke.18  3          RUNNING
+
 
 ```
+
+> `--enable-private-endpoint` will cause `kubectl` cannot access master cluster from Cloud Shell.
+> https://cloud.google.com/kubernetes-engine/docs/how-to/private-clusters#cloud_shell
 
 ## Install kubectl (optional)
 
@@ -93,23 +93,39 @@ The connection to the server localhost:8080 was refused - did you specify the ri
 
 ```
 
-## Configure kubectl (optional)
+## Access cluster and browse resources
 
-Setup `kubectl` credentials
-
-```
-$ gcloud container clusters get-credentials gke-zone-demo \
-  --zone asia-east1-b
-  
-```
-
+Remove kubectl config (option)
 
 ```
-$ gcloud container clusters get-credentials kube-cluster-1 --region asia-east1 --project wpgcloud-201706
+$ rm -rf ~/.kube
+```
+
+Fetch credentials for a running cluster
+
+```
+$ gcloud container clusters get-credentials gke-cluster-1 --region asia-east1 
 Fetching cluster endpoint and auth data.
 kubeconfig entry generated for kube-cluster-1.
 
 ```
+
+Show `kubectl` current context
+
+```
+$ kubectl config current-context
+gke_itu9-poc-20190430_asia-east1_kube-cluster-1
+
+```
+
+Show cluster infomation
+
+```
+$ kubectl cluster-info
+```
+
+
+
 
 ## Relative command for kubectl
 
