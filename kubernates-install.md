@@ -1,4 +1,4 @@
-# Kubernates (k8s) install / config on GCP
+# Kubernates (K8S) install / config on GCP
 
 Requirement
 
