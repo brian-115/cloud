@@ -137,10 +137,10 @@ $ kubectl delete pod wpg-nginx
 
 ## Examples
 
-接著我們來建立一個含有兩個容器: backend、frontend 的 pod
+### EX1: 建立一個含有兩個容器: backend、frontend 的 pod
 
-backend: 固定每秒將現在時間輸出到位於共享儲存空間的 index.html (/tmp/index.html)
-frontend: 上面執行 HTTP 伺服器來將共享儲存空間內的 index.html 呈現給使用者
+* backend: 固定每秒將現在時間輸出到位於共享儲存空間的 index.html (/tmp/index.html)
+* frontend: 上面執行 HTTP 伺服器來將共享儲存空間內的 index.html 呈現給使用者
 
 ```sh
 apiVersion: v1
