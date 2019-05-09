@@ -5,6 +5,7 @@ POD 為 K8S 最小部署單位, 由一至多個容器所組成, 使其較接近�
 TOC
 * Create a POD
 * View information of POD
+* Examples
 
 
 ## Create a POD
@@ -132,5 +133,49 @@ $ kubectl logs -f nginx
 
 ```sh
 $ kubectl delete pod wpg-nginx
+```
+
+## Examples
+
+接著我們來建立一個含有兩個容器: backend、frontend 的 pod
+
+backend: 固定每秒將現在時間輸出到位於共享儲存空間的 index.html (/tmp/index.html)
+frontend: 上面執行 HTTP 伺服器來將共享儲存空間內的 index.html 呈現給使用者
+
+```sh
+apiVersion: v1
+kind: Pod
+metadata:
+  name: example-pod
+  namespace: default
+  labels:
+    service: example-pod
+spec:
+  containers:
+    - name: backend
+      image: ubuntu
+      command:
+        - "bash"
+        - "-c"
+      args:
+        - "while true; do date > /tmp/index.html ; sleep 1; done"
+      volumeMounts:
+        - mountPath: /tmp # the mount point for volume
+          name: content-volume # should match the volume name defined below
+    - name: frontend
+      image: trinitronx/python-simplehttpserver
+      command:
+        - "sh"
+        - "-c"
+      args:
+        - "python -m SimpleHTTPServer 8080"
+      ports:
+        - containerPort: 8080
+      volumeMounts:
+      - mountPath: /var/www # we can define different mount point for different container
+        name: content-volume
+  volumes:
+    - name: content-volume
+      emptyDir: {}
 ```
 
