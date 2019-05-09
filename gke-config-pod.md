@@ -179,3 +179,6 @@ spec:
       emptyDir: {}
 ```
 
+> https://tachingchen.com/tw/blog/kubernetes-pod/
+
+
